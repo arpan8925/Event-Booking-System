@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Batch Price Calculator</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <!-- Styles omitted for brevity -->
+  </head>
+  <body>
+    <h2>Batch Event Booking</h2>
+
+    <form id="main-form">
+      <div class="form-group">
+        <label for="full-name">Full Name:</label>
+        <input type="text" id="full-name" name="full_name" required />
+      </div>
+
+      <div class="form-group">
+        <label for="phone-number">Phone Number:</label>
+        <input type="tel" id="phone-number" name="phone_number" required />
+      </div>
+
+      <div class="form-group">
+        <label for="address">Address:</label>
+        <textarea id="address" name="address" rows="3" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="batch-selection">Select Batch:</label>
+        <select id="batch-selection" onchange="calculatePrice()">
+          <option value="0">-- Select --</option>
+          <option value="100">Batch1 - ৳ 100</option>
+          <option value="200">Batch2 - ৳ 200</option>
+          <option value="300">Batch3 - ৳ 300</option>
+        </select>
+      </div>
+
+      <div class="price-output">
+        <span id="price-display">৳ 0</span>
+      </div>
+
+      <button type="button" onclick="showPopup()">Book Ticket</button>
+    </form>
+
+    <!-- Modal Popup -->
+    <div id="priceModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closePopup()">&times;</span>
+        <h1 id="popup-message">Your Total Price is ৳ 0</h1>
+        <p>You can donate extra if you want. Do you want to?</p>
+        <button onclick="showDonationSection()">YES</button>
+        <button onclick="showSummary()">NO</button>
+
+        <!-- Donation Input Section -->
+        <div id="donation-section">
+          <input
+            type="number"
+            id="donation-amount"
+            placeholder="Enter donation amount"
+            min="0"
+          />
+          <button onclick="addDonation()">Donate</button>
+        </div>
+
+        <!-- Summary Section -->
+        <div id="summary-section">
+          <h2 id="summary-message"></h2>
+          <!-- Updated form for initiating payment -->
+          <form
+            action="{{ url_for('initiate_booking_payment') }}"
+            method="post"
+          >
+            <input type="hidden" name="full_name" id="hidden_full_name" />
+            <input type="hidden" name="phone_number" id="hidden_phone_number" />
+            <input type="hidden" name="address" id="hidden_address" />
+            <input type="hidden" id="total_price" name="total_price" />
+            <input type="hidden" id="donation_amount" name="donation_amount" />
+            <button type="submit">Book a Ticket</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let basePrice = 0;
+
+      function calculatePrice() {
+        const batchSelection = document.getElementById("batch-selection").value;
+        basePrice = parseInt(batchSelection) || 0;
+        document.getElementById("price-display").textContent = `৳ ${basePrice}`;
+      }
+
+      function showPopup() {
+        document.getElementById(
+          "popup-message"
+        ).textContent = `Your Total Price is ৳ ${basePrice}`;
+        document.getElementById("priceModal").style.display = "block";
+        document.getElementById("donation-section").style.display = "none";
+        document.getElementById("summary-section").style.display = "none";
+
+        // Copy user data to hidden fields for final submission
+        document.getElementById("hidden_full_name").value =
+          document.getElementById("full-name").value;
+        document.getElementById("hidden_phone_number").value =
+          document.getElementById("phone-number").value;
+        document.getElementById("hidden_address").value =
+          document.getElementById("address").value;
+      }
+
+      function closePopup() {
+        document.getElementById("priceModal").style.display = "none";
+      }
+
+      function showDonationSection() {
+        document.getElementById("donation-section").style.display = "block";
+      }
+
+      function addDonation() {
+        const donationAmount =
+          parseInt(document.getElementById("donation-amount").value) || 0;
+        const totalAmount = basePrice + donationAmount;
+
+        // Set values in hidden form fields
+        document.getElementById("total_price").value = totalAmount;
+        document.getElementById("donation_amount").value = donationAmount;
+
+        document.getElementById(
+          "summary-message"
+        ).textContent = `Your Ticket Cost is ৳ ${basePrice} and You are donating ৳ ${donationAmount}. Your total price is ৳ ${totalAmount}.`;
+        document.getElementById("donation-section").style.display = "none";
+        document.getElementById("summary-section").style.display = "block";
+      }
+
+      function showSummary() {
+        // Set values in hidden form fields with base price only (no donation)
+        document.getElementById("total_price").value = basePrice;
+        document.getElementById("donation_amount").value = 0;
+
+        document.getElementById(
+          "summary-message"
+        ).textContent = `Your Ticket Cost is ৳ ${basePrice}. No donation added.`;
+        document.getElementById("summary-section").style.display = "block";
+      }
+
+      function finalizeBooking() {
+        alert("Your ticket has been successfully booked!");
+        closePopup();
+      }
+
+      // Close the modal when the user clicks outside of it
+      window.onclick = function (event) {
+        const modal = document.getElementById("priceModal");
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+    </script>
+  </body>
+</html>
