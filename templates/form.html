@@ -67,7 +67,7 @@
                     <div class="col-lg-8">
                         <div class="checkout-widget checkout-contact">
                             <h5 class="title">Share your Contact Details</h5>
-                            <form id="main-form" class="checkout-contact-form" name="main-form" action="/initiate_booking_payment" method="POST">
+                            <form id="main-form" class="checkout-contact-form" name="main-form" action="/initiate_booking_payment" method="POST" enctype="multipart/form-data">
                                 <div class="form-group">
                                     <label for="full-name">Full Name:</label>
                                     <input type="text" id="full-name" name="full_name" placeholder="Full Name" required>
@@ -84,8 +84,6 @@
                                         <button type="button" class="upload-button" onclick="document.getElementById('photo').click()">Browse</button>
                                     </div>
                                     <small>Upload 1 supported file: image. Max 10 MB.</small>
-
-                                    <!-- Image preview container -->
 
                                 </div>
 
@@ -154,9 +152,9 @@
                                     <label for="batch-selection">Batch Selection:</label>
                                     <select id="batch-selection" name="batch-selection" onchange="calculatePrice()" required>
                                         <option value="0">-- Select Batch --</option>
-                                        <option value="100">Batch1 - ৳ 100</option>
-                                        <option value="200">Batch2 - ৳ 200</option>
-                                        <option value="300">Batch3 - ৳ 300</option>
+                                        <option value="1">Batch1 - ৳ 100</option>
+                                        <option value="2">Batch2 - ৳ 200</option>
+                                        <option value="3">Batch3 - ৳ 300</option>
                                     </select>
                                 </div>
 

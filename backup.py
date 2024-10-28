@@ -7,7 +7,7 @@ app = Flask(__name__)
 app.secret_key = "dsfasdfdafghtr"
 
 # Directory to save uploaded files
-UPLOAD_FOLDER = 'static/uploads'
+UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -68,7 +68,7 @@ def initiate_booking_payment():
             filename = secure_filename(photo.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             photo.save(file_path)
-            photo_url = url_for('static', filename=f'uploads/{filename}', _external=True)
+            photo_url = url_for('uploaded_file', filename=filename, _external=True)
             session["photo_url"] = photo_url
         else:
             photo_url = "N/A"
@@ -76,6 +76,7 @@ def initiate_booking_payment():
     else:
         photo_url = "N/A"
         session["photo_url"] = photo_url
+
     
     # Capture batch selection and calculate total price
     try:
@@ -196,9 +197,9 @@ def payment_callback():
     else:
         return "Unknown payment status."
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return redirect(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
 if __name__ == "__main__":
     # Create uploads folder if it doesn't exist
