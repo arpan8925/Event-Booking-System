@@ -1,120 +1,148 @@
-from flask import Flask, request, redirect, url_for, render_template, session
+from flask import Flask, request, render_template, redirect, url_for, jsonify, session
 import requests
 
 app = Flask(__name__)
-app.secret_key = 'dsfasdfdafghtr'
+app.secret_key = "dsfasdfdafghtr"
 
-# SSLCOMMERZ configuration
-SSL_STORE_ID = 'abc653382f863118'
-SSL_STORE_PASS = 'abc653382f863118@ssl'
-SSL_SANDBOX_MODE = True  # Set to False for live mode
+# bKash Sandbox API Credentials
+APP_KEY = "0vWQuCRGiUX7EPVjQDr0EUAYtc"
+APP_SECRET = "jcUNPBgbcqEDedNKdvE4G1cAK7D3hCjmJccNPZZBq96QIxxwAMEx"
+USERNAME = "01770618567"
+PASSWORD = "D7DaC<*E*eG"
 
-# Set the SSLCOMMERZ API URL based on the environment
-SSL_URL = "https://sandbox.sslcommerz.com/gwprocess/v4/api.php" if SSL_SANDBOX_MODE else "https://securepay.sslcommerz.com/gwprocess/v4/api.php"
+# Set bKash API URLs
+BKASH_BASE_URL = "https://tokenized.sandbox.bka.sh/v1.2.0-beta/tokenized/checkout/"
+TOKEN_URL = BKASH_BASE_URL + "token/grant"
+CREATE_PAYMENT_URL = BKASH_BASE_URL + "create"
+EXECUTE_PAYMENT_URL = BKASH_BASE_URL + "execute/"
 
-@app.route('/')
-def home():
-    # Renders the main booking form
-    return render_template('form.html')
+# Step 1: Generate Access Token
+def generate_token():
+    headers = {
+        "username": USERNAME,
+        "password": PASSWORD,
+        "content-type": "application/json",
+        "accept": "application/json"
+    }
+    payload = {
+        "app_key": APP_KEY,
+        "app_secret": APP_SECRET
+    }
+    response = requests.post(TOKEN_URL, json=payload, headers=headers)
+    if response.status_code == 200 and response.json().get("statusCode") == "0000":
+        return response.json()["id_token"]
+    else:
+        return None
 
-@app.route('/initiate_booking_payment', methods=['POST'])
+@app.route("/")
+def index():
+    return render_template("form.html")
+
+@app.route("/initiate_booking_payment", methods=["POST"])
 def initiate_booking_payment():
-    # Capture form data and store in session
+    # Capture form data and calculate total amount
     session["full_name"] = request.form.get("full_name")
     session["phone_number"] = request.form.get("phone_number")
     session["address"] = request.form.get("address")
-    session["total_price"] = request.form.get("total_price")
     session["donation_amount"] = request.form.get("donation_amount", 0)
-    session["transaction_id"] = f'booking_tran_{int(session["total_price"])}'
 
-    # Debugging prints
-    print("Full Name:", session.get("full_name"))
-    print("Phone Number:", session.get("phone_number"))
-    print("Address:", session.get("address"))  # Check if address is captured
-    print("Total Price:", session.get("total_price"))
-    print("Donation Amount:", session.get("donation_amount"))
+    # Calculate total price
+    batch_price = int(request.form.get("batch-selection", 0))
+    donation_amount = int(session["donation_amount"] or 0)
+    total_price = batch_price + donation_amount
+    session["total_price"] = total_price
 
-    # Prepare the payload for payment initiation
+    # Generate token for bKash payment
+    id_token = generate_token()
+    if not id_token:
+        return "Failed to generate bKash token. Please try again later."
+
+    # Step 2: Create Payment
+    headers = {
+        "Authorization": f"Bearer {id_token}",
+        "accept": "application/json",
+        "content-type": "application/json",
+        "X-APP-Key": APP_KEY
+    }
     payload = {
-        'store_id': SSL_STORE_ID,
-        'store_passwd': SSL_STORE_PASS,
-        'total_amount': session["total_price"],
-        'currency': 'BDT',
-        'tran_id': session["transaction_id"],
-        'success_url': url_for('payment_success', _external=True),
-        'fail_url': url_for('payment_fail', _external=True),
-        'cancel_url': url_for('payment_cancel', _external=True),
-        'cus_name': session["full_name"],
-        'cus_email': 'user@example.com',  # Replace with actual email if available
-        'cus_add1': session["address"],   # This should now contain the address
-        'cus_city': 'Dhaka',
-        'cus_postcode': '1000',
-        'cus_country': 'Bangladesh',
-        'cus_phone': session["phone_number"],
-        'shipping_method': 'NO',
-        'product_name': 'Ticket Booking',
-        'product_category': 'Service',
-        'product_profile': 'general'
+        "mode": "0011",
+        "payerReference": session["phone_number"],
+        "callbackURL": url_for("payment_callback", _external=True),
+        "amount": str(total_price),
+        "currency": "BDT",
+        "intent": "sale",
+        "merchantInvoiceNumber": f"INV{total_price}_{session['phone_number']}"
     }
 
-    # Send the request to SSLCOMMERZ
-    response = requests.post(SSL_URL, data=payload)
-    response_data = response.json()
-
-    # Redirect to the payment gateway URL
-    if response_data['status'] == 'SUCCESS':
-        return redirect(response_data['GatewayPageURL'])
+    response = requests.post(CREATE_PAYMENT_URL, json=payload, headers=headers)
+    if response.status_code == 200 and response.json().get("statusCode") == "0000":
+        payment_data = response.json()
+        session["payment_id"] = payment_data["paymentID"]
+        session["id_token"] = id_token
+        return redirect(payment_data["bkashURL"])
     else:
-        return f"Payment initiation failed: {response_data.get('failedreason', 'Unknown error')}"
+        error_message = response.json().get("statusMessage", "Unknown error")
+        return f"Payment creation failed: {error_message}"
 
+# Step 3: Execute Payment
+@app.route("/execute_payment")
+def execute_payment():
+    # Retrieve token and payment ID from the session
+    id_token = session.get("id_token")
+    payment_id = session.get("payment_id")
 
+    # Verify if token and payment ID are available
+    if not id_token or not payment_id:
+        return render_template("error.html", error_code="Missing Data", error_message="Token or Payment ID is missing.")
+    
+    # Define URL for the execute payment endpoint
+    url = f"https://tokenized.sandbox.bka.sh/v1.2.0-beta/tokenized/checkout/execute"
 
-
-@app.route('/success', methods=['GET', 'POST'])
-def payment_success():
-    # Prepare data payload for the webhook with dynamic values from session
-    payload = {
-        "full_name": session.get("full_name"),
-        "phone_number": session.get("phone_number"),
-        "address": session.get("address"),
-        "total_price": session.get("total_price"),
-        "donation_amount": session.get("donation_amount"),
-        "transaction_id": session.get("transaction_id"),
-        "status": "success"
+    # Set headers with both Authorization and X-APP-Key
+    headers = {
+        "Authorization": f"Bearer {id_token}",
+        "X-APP-Key": APP_KEY,  # Make sure APP_KEY is defined as your bKash app key
+        "content-type": "application/json"
     }
 
-    # Trigger the webhook with the payload (this part assumed to be working)
+    # Include paymentID in the JSON payload
+    payload = {
+        "paymentID": payment_id
+    }
 
-    # Send the webhook request to the specified URL
-    webhook_url = "https://hook.us2.make.com/ai4iufhmog6guoisyc9qqw70jrivs119"
-    response = requests.post(webhook_url, json=payload)
-
-    # Check if webhook was successful (optional logging)
+    # Send the POST request to bKash's execute endpoint
+    response = requests.post(url, json=payload, headers=headers)
     if response.status_code == 200:
-        print("Webhook triggered successfully.")
-    else:
-        print(f"Webhook failed with status code {response.status_code}.")
-
+        payment_result = response.json()
         
-    # Clear session data to avoid duplication in future requests
-    session.pop("full_name", None)
-    session.pop("phone_number", None)
-    session.pop("address", None)
-    session.pop("total_price", None)
-    session.pop("donation_amount", None)
-    session.pop("transaction_id", None)
+        # Check if payment execution was successful
+        if payment_result.get("statusCode") == "0000":  # "0000" indicates success in bKash API
+            session.clear()  # Clear session data
+            return render_template("success.html", payment_result=payment_result)
+        else:
+            # Render error page with specific error message from bKash
+            error_message = payment_result.get("statusMessage", "Unknown error")
+            return render_template("error.html", error_code=payment_result.get("statusCode"), error_message=error_message)
+    else:
+        # Render error page for a failure in the HTTP response
+        return render_template("error.html", error_code="Payment Execution Error", error_message="Failed to execute payment.")
 
-    return "Ticket booking completed successfully."
 
 
+# Step 4: Payment Callback
+@app.route("/payment_callback")
+def payment_callback():
+    payment_id = request.args.get("paymentID")
+    status = request.args.get("status")
+    
+    if status == "success":
+        return redirect(url_for("execute_payment"))
+    elif status == "failure":
+        return render_template("failure.html")
+    elif status == "cancel":
+        return render_template("failure.html")
+    else:
+        return "Unknown payment status."
 
-@app.route('/fail', methods=['GET', 'POST'])
-def payment_fail():
-    return "Ticket booking failed. Please try again."
-
-@app.route('/cancel', methods=['GET', 'POST'])
-def payment_cancel():
-    return "Ticket booking was canceled."
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
