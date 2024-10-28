@@ -2,6 +2,9 @@ from flask import Flask, request, render_template, redirect, url_for, jsonify, s
 import requests
 import os
 from werkzeug.utils import secure_filename
+import random
+import string
+
 
 app = Flask(__name__)
 app.secret_key = "dsfasdfdafghtr"
@@ -44,6 +47,11 @@ def generate_token():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def generate_booking_id():
+    random_letters = ''.join(random.choices(string.ascii_uppercase, k=3))
+    random_numbers = ''.join(random.choices(string.digits, k=2))
+    return f"REU-{random_letters}-{random_numbers}"
+
 @app.route("/")
 def index():
     return render_template("form.html")
@@ -76,19 +84,34 @@ def initiate_booking_payment():
     else:
         photo_url = "N/A"
         session["photo_url"] = photo_url
-    
+
     # Capture batch selection and calculate total price
     try:
         batch_price = int(request.form.get("batch-selection", 0))
     except ValueError:
         batch_price = 0
+
+    try:
+        guest_count = int(request.form.get("guest_count", 0))
+    except ValueError:
+        guest_count = 0
     
     try:
         donation_amount = int(request.form.get("donation_amount", 0))
     except ValueError:
         donation_amount = 0
+
+    # Define the price per guest
+    guest_price = 10  # Assuming each guest costs 100
+
+    # Calculate total guest price
+    guest_total_price = guest_count * guest_price
+
+    # Calculate the total price correctly
+    total_price = batch_price + guest_total_price + donation_amount
     
-    total_price = batch_price + donation_amount
+    # Update session data
+    session["guest_count"] = guest_count
     session["donation_amount"] = donation_amount
     session["total_price"] = total_price
 
@@ -124,6 +147,7 @@ def initiate_booking_payment():
         error_message = response.json().get("statusMessage", "Unknown error")
         return f"Payment creation failed: {error_message}"
 
+
 # Step 3: Execute Payment
 @app.route("/execute_payment")
 def execute_payment():
@@ -155,6 +179,11 @@ def execute_payment():
 
         # Check if payment execution was successful
         if payment_result.get("statusCode") == "0000":
+
+            # Generate a booking ID for successful transactions
+            booking_id = generate_booking_id()
+            session["booking_id"] = booking_id
+
             # Trigger webhook to the provided URL with session data
             webhook_url = "https://hook.us2.make.com/ai4iufhmog6guoisyc9qqw70jrivs119"
             webhook_payload = {
@@ -166,14 +195,17 @@ def execute_payment():
                 "Tshirt Size": session.get("tshirt_size", "N/A"),
                 "Donation Amount": session.get("donation_amount", "N/A"),
                 "Total Amount Paid": session.get("total_price", "N/A"),
-                "Photo URL": session.get("photo_url", "N/A")
+                "Photo URL": session.get("photo_url", "N/A"),
+                "Guest": session.get("guest_count", "N/A"),
+                "Booking ID": session.get("booking_id", "N/A")
             }
 
             webhook_response = requests.post(webhook_url, json=webhook_payload)
             if webhook_response.status_code == 200:
+                booking_id = session["booking_id"]
                 # If webhook is successful, clear session data and render success page
                 session.clear()
-                return render_template("success.html", payment_result=payment_result)
+                return render_template("success.html", payment_result=payment_result, booking_id=booking_id)
             else:
                 # Handle webhook failure (optional logging or retry mechanism can be added)
                 return render_template("error.html", error_code="Webhook Error", error_message=f"Failed to send webhook after successful payment. Webhook Response: {webhook_response.text}")

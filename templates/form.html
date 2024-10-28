@@ -58,184 +58,198 @@
         </section>
 
         <div class="event-facility padding-bottom padding-top">
-
-            <!-- Warning Message Placeholder -->
-            <div id="warning-message" style="display: none; color: red; text-align: center; padding: 10px;"></div>
-
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-8">
-                        <div class="checkout-widget checkout-contact">
-                            <h5 class="title">Share your Contact Details</h5>
-                            <form id="main-form" class="checkout-contact-form" name="main-form" action="/initiate_booking_payment" method="POST" enctype="multipart/form-data">
-                                <div class="form-group">
-                                    <label for="full-name">Full Name:</label>
-                                    <input type="text" id="full-name" name="full_name" placeholder="Full Name" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="photo">Photo:</label>
-                                    <div class="custom-file-upload">
-                                        <!-- Hidden file input -->
-                                        <input type="file" id="photo" name="photo" accept="image/*" required onchange="showFileNameAndPreview(event)">
-
-                                        <!-- Display file name and custom browse button -->
-                                        <span id="file-name"></span>
-                                        <button type="button" class="upload-button" onclick="document.getElementById('photo').click()">Browse</button>
-                                    </div>
-                                    <small>Upload 1 supported file: image. Max 10 MB.</small>
-
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="phone-number">Mobile Number:</label>
-                                    <input type="tel" id="phone-number" name="phone_number" placeholder="Enter your Phone Number" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="email">Email Address:</label>
-                                    <input type="email" id="email" name="email" placeholder="Enter your Email Address" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="profession">Profession:</label>
-                                    <input type="text" id="profession" name="profession" placeholder="Your Profession" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="gender">Gender:</label>
-                                    <select id="gender" name="gender" required>
-                                        <option value="">-- Select Gender --</option>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="blood-group">Blood Group:</label>
-                                    <select id="blood-group" name="blood_group" required>
-                                        <option value="">-- Select Blood Group --</option>
-                                        <option value="A+">A+</option>
-                                        <option value="A-">A-</option>
-                                        <option value="B+">B+</option>
-                                        <option value="B-">B-</option>
-                                        <option value="AB+">AB+</option>
-                                        <option value="AB-">AB-</option>
-                                        <option value="O+">O+</option>
-                                        <option value="O-">O-</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="permanent-address">Permanent Address:</label>
-                                    <input type="text" id="permanent-address" name="permanent_address" placeholder="Enter Permanent Address" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="present-address">Present Address:</label>
-                                    <input type="text" id="present-address" name="present_address" placeholder="Enter Present Address" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="tshirt-size">T-Shirt Size:</label>
-                                    <select id="tshirt-size" name="tshirt_size" required>
-                                        <option value="">-- Select T-Shirt Size --</option>
-                                        <option value="L">L</option>
-                                        <option value="XL">XL</option>
-                                        <option value="XXL">XXL</option>
-                                        <option value="XS">XS</option>
-                                    </select>
-                                </div>
-
-                                <!-- Existing Fields (like Batch Selection, Donation Amount) -->
-                                <div class="form-group">
-                                    <label for="batch-selection">Batch Selection:</label>
-                                    <select id="batch-selection" name="batch-selection" onchange="calculatePrice()" required>
-                                        <option value="0">-- Select Batch --</option>
-                                        <option value="1">Batch1 - ৳ 100</option>
-                                        <option value="2">Batch2 - ৳ 200</option>
-                                        <option value="3">Batch3 - ৳ 300</option>
-                                    </select>
-                                </div>
-
-
-                        </div>
-                        <div class="donation_form">
-                            Donate an amount to the Event as an Aluminy
-                            <div class="form-group">
-                                <input type="number" id="donation_amount" name="donation_amount" placeholder="Enter an Amount" required="">
-                            </div>
-
-                            <input type="hidden" id="total_price" name="total_price" value="0">
-
-                            </form>
-                        </div>
+          <div id="warning-message" style="display: none; color: red; text-align: center; padding: 10px;"></div>
+          <div class="container">
+            <div class="row">
+              <div class="col-lg-8">
+                <div class="checkout-widget checkout-contact">
+                  <h5 class="title">Share your Contact Details</h5>
+                  <form id="main-form" class="checkout-contact-form" name="main-form" action="/initiate_booking_payment" method="post" enctype="multipart/form-data">
+                    <div class="form-group">
+                      <label for="full-name">Full Name:</label> <input type="text" id="full-name" name="full_name" placeholder="Full Name" required="">
                     </div>
-
-                    <div class="col-lg-4">
-                        <div class="booking-summery bg-one">
-                            <h4 class="title">Booking Summary</h4>
-                            <ul class="side-shape">
-                                <li>
-                                    <h6 class="subtitle">
-                                        <span>Ticket Price</span><span id="price-display">৳ 0</span>
-                                    </h6>
-                                    <span class="info"><span>Donation</span><span id="donation-display">৳ 0</span></span>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="proceed-area text-center">
-                            <h6 class="subtitle"><span>Amount Payable</span><span id="total_amount">৳ 0</span></h6>
-                            <button class="custom-button back-button">Proceed</button>
-                        </div>
-
-                        <div class="image_preview">
-                        <div class="booking-summery bg-one">
-                          <h4 class="title">Your Photo</h4>
-                            <div id="preview-container" class="preview-container" style="display: none;">
-                              <img id="image-preview" src="" alt="Image Preview">
-                          </div>
-                      </div>
-                      </div>
+                    <div class="form-group">
+                      <label for="photo">Photo:</label>
+                      <div class="custom-file-upload">
+                        <input type="file" id="photo" name="photo" accept="image/*" required="" onchange="showFileNameAndPreview(event)"> <span id="file-name"></span> <button type="button" class="upload-button" onclick="document.getElementById('photo').click()">Browse</button>
+                      </div><small>Upload 1 supported file: image. Max 10 MB.</small>
                     </div>
+                    <div class="form-group">
+                      <label for="phone-number">Mobile Number:</label> <input type="tel" id="phone-number" name="phone_number" placeholder="Enter your Phone Number" required="">
+                    </div>
+                    <div class="form-group">
+                      <label for="email">Email Address:</label> <input type="email" id="email" name="email" placeholder="Enter your Email Address" required="">
+                    </div>
+                    <div class="form-group">
+                      <label for="profession">Profession:</label> <input type="text" id="profession" name="profession" placeholder="Your Profession" required="">
+                    </div>
+                    <div class="form-group">
+                      <label for="gender">Gender:</label> <select id="gender" name="gender" required="">
+                        <option value="">
+                          -- Select Gender --
+                        </option>
+                        <option value="male">
+                          Male
+                        </option>
+                        <option value="female">
+                          Female
+                        </option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="blood-group">Blood Group:</label> <select id="blood-group" name="blood_group" required="">
+                        <option value="">
+                          -- Select Blood Group --
+                        </option>
+                        <option value="A+">
+                          A+
+                        </option>
+                        <option value="A-">
+                          A-
+                        </option>
+                        <option value="B+">
+                          B+
+                        </option>
+                        <option value="B-">
+                          B-
+                        </option>
+                        <option value="AB+">
+                          AB+
+                        </option>
+                        <option value="AB-">
+                          AB-
+                        </option>
+                        <option value="O+">
+                          O+
+                        </option>
+                        <option value="O-">
+                          O-
+                        </option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="permanent-address">Permanent Address:</label> <input type="text" id="permanent-address" name="permanent_address" placeholder="Enter Permanent Address" required="">
+                    </div>
+                    <div class="form-group">
+                      <label for="present-address">Present Address:</label> <input type="text" id="present-address" name="present_address" placeholder="Enter Present Address" required="">
+                    </div>
+                    <div class="form-group">
+                      <label for="tshirt-size">T-Shirt Size:</label> <select id="tshirt-size" name="tshirt_size" required="">
+                        <option value="">
+                          -- Select T-Shirt Size --
+                        </option>
+                        <option value="L">
+                          L
+                        </option>
+                        <option value="XL">
+                          XL
+                        </option>
+                        <option value="XXL">
+                          XXL
+                        </option>
+                        <option value="XS">
+                          XS
+                        </option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="batch-selection">Batch Selection:</label>
+                      <select id="batch-selection" name="batch-selection" onchange="calculatePrice()" required>
+                          <option value="0">-- Select Batch --</option>
+                          <option value="1">Batch1 - ৳ 100</option>
+                          <option value="2">Batch2 - ৳ 200</option>
+                          <option value="3">Batch3 - ৳ 300</option>
+                      </select>
+                  </div>
 
+                  <!-- New Guest Field -->
+                  <div class="form-group">
+                      <label for="add-guest">Add Guest:</label>
+                      <div class="guest-counter" style="display: flex; flex-direction: column; align-items: center;">
+                          <button type="button" class="counter-button" onclick="updateGuestCount(1)">+</button>
+                          <span id="guest-count">0</span>
+                          <button type="button" class="counter-button" onclick="updateGuestCount(-1)">-</button>
+                      </div>
+                      <small>Each guest adds ৳ 100 to the total price.</small>
+                      <input type="hidden" id="guest_count" name="guest_count" value="0">
+                  </div>
+                  
                 </div>
+                <div class="donation_form">
+                  Donate an amount to the Event as an Aluminy
+                  <div class="form-group">
+                    <input type="number" id="donation_amount" name="donation_amount" placeholder="Enter an Amount" required="">
+                  </div><input type="hidden" id="total_price" name="total_price" value="0">
+                </div>
+              </form>
+              </div>
+              <div class="col-lg-4">
+                <div class="booking-summery bg-one">
+                  <h4 class="title">Booking Summary</h4>
+                  <ul class="side-shape">
+                    <li>
+                      <h6 class="subtitle"><span>Ticket Price</span><span id="price-display">৳ 0</span></h6><span class="info"><span>Guest</span><span id="guest-display">৳ 0</span></span> <span class="info"><span>Donation</span><span id="donation-display">৳ 0</span></span>
+                    </li>
+                  </ul>
+                </div>
+                <div class="proceed-area text-center">
+                  <h6 class="subtitle"><span>Amount Payable</span><span id="total_amount">৳ 0</span></h6><button class="custom-button back-button">Proceed</button>
+                </div>
+                <div class="image_preview">
+                  <div class="booking-summery bg-one">
+                    <h4 class="title">Your Photo</h4>
+                    <div id="preview-container" class="preview-container" style="display: none;"><img id="image-preview" src="" alt="Image Preview"></div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
         </div>
 
         <script>
           let basePrice = 0;
-      
+          let guestCount = 0;
+          const guestPrice = 10;
+
           function calculatePrice() {
               const batchSelection = document.getElementById("batch-selection").value;
               basePrice = parseInt(batchSelection) || 0;
               document.getElementById("price-display").textContent = `৳ ${basePrice}`;
               updateTotal();
           }
-      
+
+          function updateGuestCount(value) {
+              guestCount = Math.max(0, guestCount + value);
+              document.getElementById("guest-count").textContent = guestCount;
+              document.getElementById("guest-display").textContent = `৳ ${guestCount * guestPrice}`;
+              document.getElementById("guest_count").value = guestCount;
+              updateTotal();
+          }
+
           const donationInput = document.getElementById('donation_amount');
           const donationDisplay = document.getElementById('donation-display');
           const totalAmountDisplay = document.getElementById('total_amount');
           const totalPriceInput = document.getElementById("total_price");
           const warningMessage = document.getElementById("warning-message");
-      
+
           donationInput.addEventListener('input', function () {
               const donationAmount = parseInt(donationInput.value) || 0;
               donationDisplay.textContent = `৳${donationAmount}`;
               updateTotal();
           });
-      
+
           function updateTotal() {
               const donationAmount = parseInt(donationInput.value) || 0;
-              const totalAmount = basePrice + donationAmount;
+              const guestTotal = guestCount * guestPrice;
+              const totalAmount = basePrice + guestTotal + donationAmount;
               totalAmountDisplay.textContent = `৳${totalAmount}`;
               totalPriceInput.value = totalAmount;
           }
-      
+
           document.querySelector('.back-button').addEventListener('click', function (event) {
               event.preventDefault();
               warningMessage.style.display = 'none';
-      
+
               const fields = [
                   { id: 'full-name', message: 'Full name is required' },
                   { id: 'phone-number', message: 'Phone number is required' },
@@ -249,12 +263,12 @@
                   { id: 'batch-selection', message: 'Batch selection is required' },
                   { id: 'photo', message: 'Photo upload is required' }
               ];
-      
+
               let isValid = true;
-      
+
               for (let field of fields) {
                   const element = document.getElementById(field.id);
-      
+
                   // Check if the element is the batch-selection and ensure its value is not "0"
                   if (field.id === 'batch-selection' && element.value === "0") {
                       isValid = false;
@@ -262,7 +276,7 @@
                       warningMessage.style.display = 'block';
                       break;
                   }
-      
+
                   // Check if the element is the photo input and ensure a file is selected
                   if (field.id === 'photo' && element.files.length === 0) {
                       isValid = false;
@@ -270,7 +284,7 @@
                       warningMessage.style.display = 'block';
                       break;
                   }
-      
+
                   // General validation for empty values
                   if (!element.value) {
                       isValid = false;
@@ -279,22 +293,22 @@
                       break;
                   }
               }
-      
+
               if (isValid) {
                   updateTotal();
                   document.getElementById("main-form").submit();
               }
           });
-      
+
           function showFileNameAndPreview(event) {
               const fileInput = document.getElementById('photo');
               const fileNameDisplay = document.getElementById('file-name');
               const previewContainer = document.getElementById('preview-container');
               const imagePreview = document.getElementById('image-preview');
-      
+
               if (fileInput.files.length > 0) {
                   fileNameDisplay.textContent = fileInput.files[0].name;
-      
+
                   const file = fileInput.files[0];
                   if (file && file.type.startsWith("image/")) {
                       const reader = new FileReader();
