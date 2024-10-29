@@ -26,10 +26,13 @@ SSL_URL = "https://sandbox.sslcommerz.com/gwprocess/v4/api.php" if SSL_SANDBOX_M
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+counter = 0
+
 def generate_booking_id():
+    global counter
+    counter += 1
     random_letters = ''.join(random.choices(string.ascii_uppercase, k=3))
-    random_numbers = ''.join(random.choices(string.digits, k=2))
-    return f"REU-{random_letters}-{random_numbers}"
+    return f"REU-{random_letters}-{counter:04d}"
 
 # Set the countdown end time to 5 minutes from now
 COUNTDOWN_END_TIME = datetime.now() + timedelta(minutes=400)
@@ -99,7 +102,7 @@ def initiate_booking_payment():
         donation_amount = 0
 
     # Define the price per guest
-    guest_price = 10  # Assuming each guest costs 10
+    guest_price = 800  # Assuming each guest costs 10
 
     # Calculate total guest price
     guest_total_price = guest_count * guest_price
@@ -125,7 +128,7 @@ def initiate_booking_payment():
     payload = {
         'store_id': SSL_STORE_ID,
         'store_passwd': SSL_STORE_PASS,
-        'total_amount': str(total_price),
+        'total_amount': str(batch_price + guest_total_price + donation_amount),
         'currency': 'BDT',
         'tran_id': generate_booking_id(),
         'success_url': url_for('payment_success', _external=True),
@@ -167,6 +170,7 @@ def payment_success():
         "Name": session.get("full_name", "N/A"),
         "Number": session.get("phone_number", "N/A"),
         "Address": session.get("permanent_address", "N/A"),
+        "Email": session.get("email", "N/A"),
         "Blood Group": session.get("blood_group", "N/A"),
         "Gender": session.get("gender", "N/A"),
         "Tshirt Size": session.get("tshirt_size", "N/A"),
@@ -181,8 +185,6 @@ def payment_success():
     webhook_response = requests.post(webhook_url, json=webhook_payload)
     if webhook_response.status_code == 200:
         booking_id = session["booking_id"]
-        # If webhook is successful, clear session data and render success page
-        session.clear()
         return render_template("success.html", booking_id=booking_id)
     else:
         # Handle webhook failure (optional logging or retry mechanism can be added)
