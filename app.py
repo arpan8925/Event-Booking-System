@@ -1,10 +1,11 @@
-from flask import Flask, request, render_template, redirect, url_for, jsonify, session, send_from_directory
+from flask import Flask, request, render_template, redirect, url_for, jsonify, session
 from datetime import datetime, timedelta
 import requests
 import os
 from werkzeug.utils import secure_filename
 import random
 import string
+import uuid
 
 
 app = Flask(__name__)
@@ -15,43 +16,84 @@ UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-# SSLCOMMERZ configuration
-SSL_STORE_ID = 'abc653382f863118'
-SSL_STORE_PASS = 'abc653382f863118@ssl'
-SSL_SANDBOX_MODE = True  # Set to False for live mode
+# Form Values
 
-# Set the SSLCOMMERZ API URL
-SSL_URL = "https://sandbox.sslcommerz.com/gwprocess/v4/api.php" if SSL_SANDBOX_MODE else "https://securepay.sslcommerz.com/gwprocess/v4/api.php"
+BATCH_PRICE = [
+    {"label": "Batch-(1974-1985)year - ৳ 2500", "value": 1000},
+    {"label": "Batch-(1986-2000)year - ৳ 2000", "value": 1000},
+    {"label": "Batch-(2001-2015)year - ৳ 1500", "value": 1000},
+    {"label": "Batch-(2016-2023)year - ৳ 1000", "value": 1000},
+    {"label": "Running Student ( Class 6 - 10 ) - ৳ 1000", "value": 500}
+]
+
+GUEST_PRICE = 500
+
+
+
+# bKash Sandbox API Credentials
+APP_KEY = "tVMpxtyMQCL1ULF7YvD2FWI9tc"
+APP_SECRET = "n5EE1Q2U0rft3jVsfHAnNaOZ2WE4d6O64TX8uX3c4NtXAFbds1JM"
+USERNAME = "01841886558"
+PASSWORD = ";3Ti^j=iu[Y"
+
+# Set bKash API URLs
+BKASH_BASE_URL = "https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized/checkout/"
+TOKEN_URL = BKASH_BASE_URL + "token/grant"
+CREATE_PAYMENT_URL = BKASH_BASE_URL + "create"
+EXECUTE_PAYMENT_URL = BKASH_BASE_URL + "execute/"
+
+# Step 1: Generate Access Token
+def generate_token():
+    headers = {
+        "username": USERNAME,
+        "password": PASSWORD,
+        "content-type": "application/json",
+        "accept": "application/json"
+    }
+    payload = {
+        "app_key": APP_KEY,
+        "app_secret": APP_SECRET
+    }
+    response = requests.post(TOKEN_URL, json=payload, headers=headers)
+    if response.status_code == 200 and response.json().get("statusCode") == "0000":
+        return response.json().get("id_token")
+    else:
+        return None
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-counter = 0
-
 def generate_booking_id():
-    global counter
-    counter += 1
-    random_letters = ''.join(random.choices(string.ascii_uppercase, k=3))
-    return f"REU-{random_letters}-{counter:04d}"
-
-# Set the countdown end time to 5 minutes from now
-COUNTDOWN_END_TIME = datetime.now() + timedelta(minutes=400)
-
-# Set the event date here
-EVENT_DATE_STR = "2024-12-31 23:59:59"  # Change this to your desired date
-EVENT_DATE = datetime.strptime(EVENT_DATE_STR, "%Y-%m-%d %H:%M:%S")
+    # Use UUID for additional randomness
+    unique_id = uuid.uuid4().hex[:6].upper()  # Take first 6 chars of UUID and make it uppercase
+    
+    # Combine everything to ensure uniqueness, with uppercase unique_id
+    return f"REU-{unique_id}"
 
 @app.route("/")
 def index():
-    current_date = datetime.now()
-    # Check if the event date is in the future
-    is_future_event = current_date < EVENT_DATE
-    countdown_end_time_str = EVENT_DATE.strftime("%b %d, %Y %H:%M:%S")
+    # Clear session data when accessing the index page
+    session.clear()
+    
+    countdown_end_time_str = "Jan 10, 2025 23:59:59"
+    countdown_end_datetime = datetime.strptime(countdown_end_time_str, "%b %d, %Y %H:%M:%S")
+    
+    # Format the countdown date for display
+    formatted_date = countdown_end_datetime.strftime('%a, %b %d %Y')
+    
+    # Determine if the countdown is in the future
+    is_future_event = datetime.now() < countdown_end_datetime
+
+    # Batch options to be passed to the form
+    batch_options = BATCH_PRICE
+    guest_price = GUEST_PRICE
     
     return render_template(
         "form.html", 
-        current_date=current_date.strftime('%a, %b %d %Y'), 
+        current_date=formatted_date,  # Now passing the formatted countdown date
         countdown_end_time_str=countdown_end_time_str,
+        batch_options=batch_options,
+        guest_price=guest_price,
         is_future_event=is_future_event
     )
 
@@ -102,7 +144,7 @@ def initiate_booking_payment():
         donation_amount = 0
 
     # Define the price per guest
-    guest_price = 800  # Assuming each guest costs 10
+    guest_price = GUEST_PRICE  # Assuming each guest costs 800
 
     # Calculate total guest price
     guest_total_price = guest_count * guest_price
@@ -114,92 +156,119 @@ def initiate_booking_payment():
     session["guest_count"] = guest_count
     session["donation_amount"] = donation_amount
     session["total_price"] = total_price
-    batch_selection = request.form.get("batch-selection", "N/A")
-    batch_name = {
-        "3000": "Batch-(1974-1985)year - ৳ 3000",
-        "2500": "Batch-(1986-2000)year - ৳ 2500",
-        "2000": "Batch-(2001-2015)year - ৳ 2000",
-        "1500": "Batch-(2016-2023)year - ৳ 1500",
-        "1000": "Running Student ( Class 6-9 ) - ৳ 1000"
-    }.get(batch_selection, "N/A")
-    session["batch_selection"] = batch_name
-    
-    # Prepare the payload for SSLCOMMERZ payment initiation
+
+    # Generate token for bKash payment
+    id_token = generate_token()
+    if not id_token:
+        return "Failed to generate bKash token. Please try again later."
+
+    # Step 2: Create Payment
+    headers = {
+        "Authorization": f"Bearer {id_token}",
+        "accept": "application/json",
+        "content-type": "application/json",
+        "X-APP-Key": APP_KEY
+    }
     payload = {
-        'store_id': SSL_STORE_ID,
-        'store_passwd': SSL_STORE_PASS,
-        'total_amount': str(batch_price + guest_total_price + donation_amount),
-        'currency': 'BDT',
-        'tran_id': generate_booking_id(),
-        'success_url': url_for('payment_success', _external=True),
-        'fail_url': url_for('payment_fail', _external=True),
-        'cancel_url': url_for('payment_cancel', _external=True),
-        'cus_name': session["full_name"],
-        'cus_email': session["email"],
-        'cus_add1': session["permanent_address"],
-        'cus_city': 'Dhaka',
-        'cus_postcode': '1000',
-        'cus_country': 'Bangladesh',
-        'cus_phone': session["phone_number"],
-        'shipping_method': 'NO',
-        'product_name': 'Batch Registration',
-        'product_category': 'Event',
-        'product_profile': 'general'
+        "mode": "0011",
+        "payerReference": session["phone_number"],
+        "callbackURL": url_for("payment_callback", _external=True),
+        "amount": str(total_price),
+        "currency": "BDT",
+        "intent": "sale",
+        "merchantInvoiceNumber": generate_booking_id()
     }
 
-    # Send the request to SSLCOMMERZ
-    response = requests.post(SSL_URL, data=payload)
-    response_data = response.json()
-
-    # Redirect to the payment gateway URL
-    if response_data['status'] == 'SUCCESS':
-        return redirect(response_data['GatewayPageURL'])
+    response = requests.post(CREATE_PAYMENT_URL, json=payload, headers=headers)
+    if response.status_code == 200 and response.json().get("statusCode") == "0000":
+        payment_data = response.json()
+        session["payment_id"] = payment_data.get("paymentID")
+        session["id_token"] = id_token
+        return redirect(payment_data.get("bkashURL"))
     else:
-        return f"Payment initiation failed: {response_data.get('failedreason', 'Unknown error')}"
+        error_message = response.json().get("statusMessage", "Unknown error")
+        return f"Payment creation failed: {error_message}"
 
-@app.route('/success', methods=['GET', 'POST'])
-def payment_success():
-    # Generate a booking ID for successful transactions
-    booking_id = generate_booking_id()
-    session["booking_id"] = booking_id
+# Step 3: Execute Payment
+@app.route("/execute_payment")
+def execute_payment():
+    id_token = session.get("id_token")
+    payment_id = session.get("payment_id")
 
-    # Trigger webhook to the provided URL with session data
-    webhook_url = "https://hook.us2.make.com/ai4iufhmog6guoisyc9qqw70jrivs119"
-    webhook_payload = {
-        "Transaction Date & Time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        "Name": session.get("full_name", "N/A"),
-        "Number": session.get("phone_number", "N/A"),
-        "Address": session.get("permanent_address", "N/A"),
-        "Email": session.get("email", "N/A"),
-        "Blood Group": session.get("blood_group", "N/A"),
-        "Gender": session.get("gender", "N/A"),
-        "Tshirt Size": session.get("tshirt_size", "N/A"),
-        "Donation Amount": session.get("donation_amount", "N/A"),
-        "Total Amount Paid": session.get("total_price", "N/A"),
-        "Photo URL": session.get("photo_url", "N/A"),
-        "Guest": session.get("guest_count", "N/A"),
-        "Booking ID": session.get("booking_id", "N/A"),
-        "Batch": session.get("batch_selection", "N/A")
+    if not id_token or not payment_id:
+        return render_template("error.html", error_code="Missing Data", error_message="Token or Payment ID is missing.")
+
+    headers = {
+        "Authorization": f"Bearer {id_token}",
+        "X-APP-Key": APP_KEY,
+        "accept": "application/json",
+        "content-type": "application/json"
     }
 
-    webhook_response = requests.post(webhook_url, json=webhook_payload)
-    if webhook_response.status_code == 200:
-        booking_id = session["booking_id"]
-        return render_template("success.html", booking_id=booking_id)
+    payload = {
+        "paymentID": payment_id
+    }
+
+    response = requests.post(EXECUTE_PAYMENT_URL, json=payload, headers=headers)
+    if response.status_code == 200:
+        payment_result = response.json()
+
+        if payment_result.get("statusCode") == "0000":
+            # Extract customerMsisdn and trxID from the payment result
+            customer_msisdn = payment_result.get("customerMsisdn", "N/A")
+            trx_id = payment_result.get("trxID", "N/A")
+
+            booking_id = generate_booking_id()
+            session["booking_id"] = booking_id
+
+            # Prepare webhook payload with additional fields
+            webhook_url = "https://hook.us2.make.com/ai4iufhmog6guoisyc9qqw70jrivs119"
+            webhook_payload = {
+                "Transaction Date & Time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                "Name": session.get("full_name", "N/A"),
+                "Number": session.get("phone_number", "N/A"),
+                "Address": session.get("permanent_address", "N/A"),
+                "Email": session.get("email", "N/A"),
+                "Blood Group": session.get("blood_group", "N/A"),
+                "Gender": session.get("gender", "N/A"),
+                "Tshirt Size": session.get("tshirt_size", "N/A"),
+                "Donation Amount": session.get("donation_amount", "N/A"),
+                "Total Amount Paid": session.get("total_price", "N/A"),
+                "Photo URL": session.get("photo_url", "N/A"),
+                "Guest": session.get("guest_count", "N/A"),
+                "Booking ID": session.get("booking_id", "N/A"),
+                "Batch": session.get("batch_selection", "N/A"),
+                "customerMsisdn": customer_msisdn,  # Add customerMsisdn to webhook payload
+                "trxID": trx_id  # Add trxID to webhook payload
+            }
+
+            webhook_response = requests.post(webhook_url, json=webhook_payload)
+            if webhook_response.status_code == 200:
+                booking_id = session["booking_id"]
+                return render_template("success.html", booking_id=booking_id)
+            else:
+                return render_template("error.html", error_code="Webhook Error", error_message=f"Failed to send webhook after successful payment. Webhook Response: {webhook_response.text}")
+        else:
+            error_message = payment_result.get("statusMessage", "Unknown error")
+            return render_template("error.html", error_code=payment_result.get("statusCode"), error_message=f"Payment execution failed. bKash Response: {payment_result}")
     else:
-        # Handle webhook failure (optional logging or retry mechanism can be added)
-        return render_template("error.html", error_code="Webhook Error", error_message=f"Failed to send webhook after successful payment. Webhook Response: {webhook_response.text}")
+        return render_template("error.html", error_code="Payment Execution Error", error_message=f"Failed to execute payment. HTTP Response: {response.status_code}, Message: {response.text}")
 
-@app.route('/fail', methods=['GET', 'POST'])
-def payment_fail():
-    return render_template("error.html", error_code="Payment Failed", error_message="Payment failed. Please try again.")
 
-@app.route('/cancel', methods=['GET', 'POST'])
-def payment_cancel():
-    return render_template("error.html", error_code="Payment Canceled", error_message="Payment was canceled.")
+# Step 4: Payment Callback
+@app.route("/payment_callback")
+def payment_callback():
+    payment_id = request.args.get("paymentID")
+    status = request.args.get("status")
+
+    if status == "success":
+        return redirect(url_for("execute_payment"))
+    elif status == "failure" or status == "cancel":
+        return "Payment failed or was canceled."
+    else:
+        return "Unknown payment status."
 
 if __name__ == "__main__":
-    # Create uploads folder if it doesn't exist
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
     app.run(debug=True)

@@ -901,6 +901,13 @@ input[type="submit"] {
   padding: 0;
 }
 
+
+img.flip_bg {
+  height: 139px;
+  margin-bottom: 29px;
+  margin-top: -101px;
+}
+
 .bg_img {
   background-size: cover;
   background-position: center center;
