@@ -19,7 +19,11 @@
 ## Introduction
 This is a Flask-based web application that facilitates event registration and payment processing using the bKash API. Users can select their batch, pay for their registration, and optionally donate additional funds. The system securely handles file uploads, payment authentication, and webhook notifications.
 
-![bKash Logo](https://upload.wikimedia.org/wikipedia/commons/5/5b/BKash-Logo.wine.svg)
+## Supported Payment Systems
+
+|Bkash| SSL Commerz |
+|--|--|
+| ![Flask Logo](https://upload.wikimedia.org/wikipedia/en/thumb/6/68/BKash_logo.svg/150px-BKash_logo.svg.png) | ![Flask Logo](https://sslcommerz.com/wp-content/uploads/2021/11/logo.png) |
 
 ## Features
 - **User Registration:** Users provide personal details and select their batch category.
