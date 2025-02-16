@@ -136,7 +136,5 @@ pip install -r requirements.txt
 ![Project Screenshot 2](images/SS_2.png)
 ![Project Screenshot 3](images/SS_3.png)
 
-![Project Screenshot 2](path/to/your/screenshot2.png)
-
 ## License
 This project is licensed under the MIT License.
