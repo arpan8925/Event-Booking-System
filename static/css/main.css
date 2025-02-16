@@ -9148,6 +9148,10 @@ aside {
   padding: 7px 30px;
 }
 
+.form-group.f {
+  width: 100%;
+}
+
 .custom-button.back-button i {
   margin-right: 5px;
   -webkit-transform: rotate(180deg);

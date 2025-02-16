@@ -37,7 +37,7 @@
                   <img class="flip_bg" src="/static/images/background.jpg" alt="bg_image">
                 </div>
                   <div class="details-banner-content style-two">
-                      <h3 class="title"><span class="d-block">1st Grand Reunion</span> <span class="d-block">Registration Form - 2024</span></h3>
+                      <h3 class="title"><span class="d-block">1st Grand Reunion</span> <span class="d-block">Registration Form - 2024</span></h3><h5><span class="bounce-top">( For Teachers Only )</span></h5>
                       <div class="tags">
                           <span class="a-block">Railway Employees Girl's High School </span>
                           <span class="a-block">Tigerpass, Chattogram.</span>
@@ -89,9 +89,6 @@
                     </div>
                     <div class="form-group">
                       <label clsss="required-field" for="email">Email Address:</label> <span style="color: red;">*</span><input type="email" id="email" name="email" placeholder="Enter your Email Address">
-                    </div>
-                    <div class="form-group">
-                      <label clsss="required-field" for="profession">Profession: <span style="color: red;">*</span></label> <input type="text" id="profession" name="profession" placeholder="Your Profession" required="">
                     </div>
                     <div class="form-group">
                       <label clsss="required-field" for="gender">Gender: <span style="color: red;">*</span></label> <select id="gender" name="gender" required="">
@@ -162,17 +159,6 @@
                         </option>
                       </select>
                     </div>
-                    <div class="form-group">
-                      <label clsss="required-field" for="batch-selection">Select Your Batch <span style="color: red;">*</span></label>
-                      <select id="batch-selection" name="batch-selection" onchange="calculatePrice()" required>
-                          <option value="0">-- Select SSC Batch --</option>
-                          <option value={{batch_options[0].value}}>Batch-(1974-1985)year</option>
-                          <option value={{batch_options[1].value}}>Batch-(1986-2000)year</option>
-                          <option value={{batch_options[2].value}}>Batch-(2001-2015)year</option>
-                          <option value={{batch_options[3].value}}>Batch-(2016-2023)year</option>
-                          <option value={{batch_options[4].value}}>Running Student ( Class 6-9 )</option>
-                      </select>
-                  </div>
 
                   <!-- New Guest Field -->
                   <div class="form-group">
@@ -187,9 +173,20 @@
                       <input type="hidden" id="guest_count" name="guest_count" value="0">
                   </div>
                   
+                  <!-- Payment method selection -->
+                  <div class="form-group f">
+                      <label for="payment_method">Payment Method <span style="color: red;">*</span></label>
+                      <select name="payment_method" id="payment_method" class="form-control" required>
+                          {% for gateway in available_gateways %}
+                              <option value="{{ gateway.value }}" {% if gateway.value == default_gateway %}selected{% endif %}>
+                                  {{ gateway.label }}
+                              </option>
+                          {% endfor %}
+                      </select>
+                  </div>
                 </div>
                 <div class="donation_form">
-                  Donate an amount to the Event as an Aluminy (optional)
+                  Donate an amount to the Event (optional)
                   <div class="form-group">
                     <input type="number" id="donation_amount" name="donation_amount" placeholder="Enter an Amount" required="">
                   </div><input type="hidden" id="total_price" name="total_price" value="0">
@@ -201,7 +198,7 @@
                   <h4 class="title">Booking Summary</h4>
                   <ul class="side-shape">
                     <li>
-                      <h6 class="subtitle"><span>Ticket Price</span><span id="price-display">৳ 0</span></h6><span class="info"><span>Guest</span><span id="guest-display">৳ 0</span></span> <span class="info"><span>Donation</span><span id="donation-display">৳ 0</span></span>
+                      <h6 class="subtitle"><span>Ticket Price</span><span id="price-display">৳ 500</span></h6><span class="info"><span>Guest</span><span id="guest-display">৳ 0</span></span> <span class="info"><span>Donation</span><span id="donation-display">৳ 0</span></span>
                     </li>
                   </ul>
                 </div>
@@ -224,17 +221,11 @@
         </div> 
 
           <script>
-            let basePrice = 0;
+            let basePrice = 500; // Set default base price to 1
             let guestCount = 0;
             const guestPrice = {{guest_price}};
-
-            function calculatePrice() {
-                const batchSelection = document.getElementById("batch-selection").value;
-                basePrice = parseInt(batchSelection) || 0;
-                document.getElementById("price-display").textContent = `৳ ${basePrice}`;
-                updateTotal();
-            }
-
+            
+            // Function to update guest count and display
             function updateGuestCount(value) {
                 guestCount = Math.max(0, guestCount + value);
                 document.getElementById("guest-count").textContent = guestCount;
@@ -242,19 +233,20 @@
                 document.getElementById("guest_count").value = guestCount;
                 updateTotal();
             }
-
+            
+            // Donation and total amount updates
             const donationInput = document.getElementById('donation_amount');
             const donationDisplay = document.getElementById('donation-display');
             const totalAmountDisplay = document.getElementById('total_amount');
             const totalPriceInput = document.getElementById("total_price");
             const warningMessage = document.getElementById("warning-message");
-
+            
             donationInput.addEventListener('input', function () {
                 const donationAmount = parseInt(donationInput.value) || 0;
                 donationDisplay.textContent = `৳${donationAmount}`;
                 updateTotal();
             });
-
+            
             function updateTotal() {
                 const donationAmount = parseInt(donationInput.value) || 0;
                 const guestTotal = guestCount * guestPrice;
@@ -262,37 +254,28 @@
                 totalAmountDisplay.textContent = `৳${totalAmount}`;
                 totalPriceInput.value = totalAmount;
             }
-
+            
+            // Back button validation and form submission
             document.querySelector('.back-button').addEventListener('click', function (event) {
                 event.preventDefault();
                 warningMessage.style.display = 'none';
-
+            
                 const fields = [
                     { id: 'full-name', message: 'Full name is required' },
                     { id: 'phone-number', message: 'Phone number is required' },
                     { id: 'email', message: 'Email is required' },
-                    { id: 'profession', message: 'Profession is required' },
                     { id: 'gender', message: 'Gender selection is required' },
                     { id: 'blood-group', message: 'Blood group selection is required' },
                     { id: 'permanent-address', message: 'Permanent address is required' },
                     { id: 'present-address', message: 'Present address is required' },
                     { id: 'tshirt-size', message: 'T-shirt size is required' },
-                    { id: 'batch-selection', message: 'Batch selection is required' },
                 ];
-
+            
                 let isValid = true;
-
+            
                 for (let field of fields) {
                     const element = document.getElementById(field.id);
-
-                    // Check if the element is the batch-selection and ensure its value is not "0"
-                    if (field.id === 'batch-selection' && element.value === "0") {
-                        isValid = false;
-                        warningMessage.textContent = field.message;
-                        warningMessage.style.display = 'block';
-                        break;
-                    }
-
+            
                     // Check if the element is the photo input and ensure a file is selected
                     if (field.id === 'photo' && element.files.length === 0) {
                         isValid = false;
@@ -300,7 +283,7 @@
                         warningMessage.style.display = 'block';
                         break;
                     }
-
+            
                     // General validation for empty values
                     if (!element.value) {
                         isValid = false;
@@ -309,22 +292,23 @@
                         break;
                     }
                 }
-
+            
                 if (isValid) {
                     updateTotal();
                     document.getElementById("main-form").submit();
                 }
             });
-
+            
+            // File upload and preview handling
             function showFileNameAndPreview(event) {
                 const fileInput = document.getElementById('photo');
                 const fileNameDisplay = document.getElementById('file-name');
                 const previewContainer = document.getElementById('preview-container');
                 const imagePreview = document.getElementById('image-preview');
-
+            
                 if (fileInput.files.length > 0) {
                     fileNameDisplay.textContent = fileInput.files[0].name;
-
+            
                     const file = fileInput.files[0];
                     if (file && file.type.startsWith("image/")) {
                         const reader = new FileReader();
@@ -342,41 +326,41 @@
                     previewContainer.style.display = 'none';
                 }
             }
-        </script>
+            
+            // Countdown logic
+            {% if is_future_event %}
+            var countDownDate = new Date("{{ countdown_end_time_str }}").getTime();
+            
+            var x = setInterval(function() {
+                var now = new Date().getTime();
+                var distance = countDownDate - now;
+            
+                var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            
+                days = days < 10 ? "0" + days : days;
+                hours = hours < 10 ? "0" + hours : hours;
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+            
+                document.getElementById("countdown-timer").textContent = 
+                    days + " Days " + hours + " Hours " + minutes + " Minutes " + seconds + " Seconds";
+            
+                if (distance < 0) {
+                    clearInterval(x);
+                    document.getElementById("countdown-timer").innerHTML = "<span style='color: red;'>END</span>";
+                }
+            }, 1000);
+            {% endif %}
 
-        <script>
-          {% if is_future_event %}
-          // Set the countdown end time from the server-provided date string
-          var countDownDate = new Date("{{ countdown_end_time_str }}").getTime();
-          
-          // Update the countdown every second
-          var x = setInterval(function() {
-            var now = new Date().getTime();
-            var distance = countDownDate - now;
-          
-            // Calculate days, hours, minutes, and seconds
-            var days = Math.floor(distance / (1000 * 60 * 60 * 24));
-            var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-          
-            // Format each component to always show two digits
-            days = days < 10 ? "0" + days : days;
-            hours = hours < 10 ? "0" + hours : hours;
-            minutes = minutes < 10 ? "0" + minutes : minutes;
-            seconds = seconds < 10 ? "0" + seconds : seconds;
-          
-            // Display the result in the countdown-timer element
-            document.getElementById("countdown-timer").textContent = 
-              days + " Days " + hours + " Hours " + minutes + " Minutes " + seconds + " Seconds";
-          
-            // If the countdown is finished, stop the timer and display "END" in red
-            if (distance < 0) {
-              clearInterval(x);
-              document.getElementById("countdown-timer").innerHTML = "<span style='color: red;'>END</span>";
-            }
-          }, 1000);
-          {% endif %}
+            // Add this to your existing JavaScript
+            document.getElementById('payment_method').addEventListener('change', function() {
+                const method = this.value;
+                // You can add logic here to show/hide specific payment fields
+                // based on the selected payment method
+            });
           </script>
 
         <script src="/static/js/jquery-3.3.1.min.js"></script>

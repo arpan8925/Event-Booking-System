@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
@@ -16,7 +18,7 @@
 
     <link rel="shortcut icon" href="/static/images/favicon.png" type="image/x-icon">
 
-    <title>Boleto  - Online Ticket Booking Website HTML Template</title>
+    <title>Payment Success</title>
 
 
 </head>
@@ -39,17 +41,13 @@
     </a>
     <!-- ==========Overlay========== -->
     
-    <div class="newslater-section padding-bottom">
-        <div class="container">
-            <div class="newslater-container bg_img" data-background="./assets//static/images/newslater/newslater-bg01.jpg">
-                <div class="newslater-wrapper">
-                    <h5 class="cate"> Congratulations 🥳 </h5>
-                    <h3 class="title"> Your ticket is booked ✅ </h3>
-                    <h3 class="title"> Booking ID : {{ booking_id }} </h3>
-                    <p>Save a screenshot of this page or Remember your booking id for entry</p>
-                </div>
-            </div>
+    <div class="container mt-5">
+        <div class="alert alert-success">
+            <h4>Payment Successful!</h4>
+            <p>Your transaction ID: {{ transaction_id }}</p>
+            <p>Thank you for your registration. You will receive a confirmation email shortly.</p>
         </div>
+        <a href="/" class="btn btn-primary">Return to Home</a>
     </div>
 
 

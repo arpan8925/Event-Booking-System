@@ -1,0 +1,16 @@
+{
+    "default_gateway": "sslcommerz",
+    "bkash": {
+        "APP_KEY": "4f6o0cjiki2rfm34kfdadl1eqq",
+        "APP_SECRET": "2is7hdktrekvrbljjh44ll3d9l1dtjo4pasmjvs5vl5qr3fug4b",
+        "USERNAME": "sandboxTokenizedUser02",
+        "PASSWORD": "sandboxTokenizedUser02@12345",
+        "enabled": true
+    },
+    "sslcommerz": {
+        "STORE_ID": "abc653382f863118",
+        "STORE_PASS": "abc653382f863118@ssl",
+        "SANDBOX_MODE": true,
+        "enabled": true
+    }
+}
