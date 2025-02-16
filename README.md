@@ -23,7 +23,7 @@ This is a Flask-based web application that facilitates event registration and pa
 
 |Bkash| SSL Commerz |
 |--|--|
-| ![Flask Logo](https://upload.wikimedia.org/wikipedia/en/thumb/6/68/BKash_logo.svg/150px-BKash_logo.svg.png) | ![Flask Logo](https://sslcommerz.com/wp-content/uploads/2021/11/logo.png) |
+| ![Bkash Logo](https://freelogopng.com/images/all_img/1656235654bkash-logo-white.png) | ![SSL Logo](https://sslcommerz.com/wp-content/uploads/2021/11/logo.png) |
 
 ## Features
 - **User Registration:** Users provide personal details and select their batch category.
