@@ -132,9 +132,9 @@ pip install -r requirements.txt
 
 ## Project Screenshots
 
-![Project Screenshot 1](images/SS_1)
-![Project Screenshot 2](images/SS_2)
-![Project Screenshot 3](images/SS_3)
+![Project Screenshot 1](images/SS_1.png)
+![Project Screenshot 2](images/SS_2.png)
+![Project Screenshot 3](images/SS_3.png)
 
 ![Project Screenshot 2](path/to/your/screenshot2.png)
 
